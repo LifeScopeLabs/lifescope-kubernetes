@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lifescope-embed
+  namespace: lifescope
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lifescope-embed
+  template:
+    metadata:
+      labels:
+        app: lifescope-embed
+    spec:
+      serviceAccountName: lifescope
+      containers:
+        - name: lifescope-embed
+          image: lifescopelabs/lifescope-embed:v1.1.0-dev
+          ports:
+            - containerPort: 8061
+          env:
+            - name: NODE_ENV
+              value: dev
+          volumeMounts:
+            - mountPath: "/usr/src/lifescope-embed/tmp"
+              name: lifescope-embed-dev-config
+              readOnly: true
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - cp /usr/src/lifescope-embed/tmp/config.dev.js /usr/src/lifescope-embed/config.dev.js
+          imagePullPolicy: IfNotPresent
+      dnsPolicy: Default
+      volumes:
+        - name: lifescope-embed-dev-config
+          secret:
+            secretName: lifescope-embed-dev-config
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: lifescope-embed-ingress-master
+  namespace: lifescope
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "master"
+spec:
+  tls:
+    - hosts:
+        - embed.dev.lifescope.io
+      secretName: lifescope-secret
+  rules:
+    - host: embed.dev.lifescope.io
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: lifescope-embed-ingress-main-minion
+  namespace: lifescope
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.org/mergeable-ingress-type: "minion"
+spec:
+  rules:
+    - host: embed.dev.lifescope.io
+      http:
+        paths:
+          - backend:
+              serviceName: lifescope-embed
+              servicePort: 8061
+            path: /

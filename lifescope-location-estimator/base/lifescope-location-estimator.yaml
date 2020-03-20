@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lifescope
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lifescope
+  namespace: lifescope
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lifescope-location-estimator
+  namespace: lifescope
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lifescope-location-estimator
+  template:
+    metadata:
+      labels:
+        app: lifescope-location-estimator
+    spec:
+      serviceAccountName: lifescope
+      containers:
+        - name: lifescope-location-estimator
+          image: lifescopelabs/lifescope-location-estimator:v1.1.0
+          env:
+            - name: NODE_ENV
+              value: dev
+          volumeMounts:
+            - mountPath: "/usr/src/lifescope-location-estimator/config/tmp"
+              name: lifescope-location-estimator-dev-config
+              readOnly: true
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - cp /usr/src/lifescope-location-estimator/config/tmp/dev.json /usr/src/lifescope-location-estimator/config/dev.json
+          imagePullPolicy: IfNotPresent
+      dnsPolicy: Default
+      volumes:
+        - name: lifescope-location-estimator-dev-config
+          secret:
+            secretName: lifescope-location-estimator-dev-config

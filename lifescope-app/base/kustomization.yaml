@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: lifescope
+resources:
+  - lifescope-app.yaml
+secretGenerator:
+  - name: lifescope-app-dev-config
+    files:
+      - dev.json
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lifescope
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lifescope
+  namespace: lifescope
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lifescope-location-processor
+  namespace: lifescope
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lifescope-location-processor
+  template:
+    metadata:
+      labels:
+        app: lifescope-location-processor
+    spec:
+      serviceAccountName: lifescope
+      containers:
+        - name: lifescope-location-processor
+          image: lifescopelabs/lifescope-location-processor:v1.1.0
+          env:
+            - name: NODE_ENV
+              value: dev
+          volumeMounts:
+            - mountPath: "/usr/src/lifescope-location-processor/config/tmp"
+              name: lifescope-location-processor-dev-config
+              readOnly: true
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - cp /usr/src/lifescope-location-processor/config/tmp/dev.json /usr/src/lifescope-location-processor/config/dev.json
+          imagePullPolicy: IfNotPresent
+      dnsPolicy: Default
+      volumes:
+        - name: lifescope-location-processor-dev-config
+          secret:
+            secretName: lifescope-location-processor-dev-config

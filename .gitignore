@@ -1,0 +1,8 @@
+**/dev.json
+**/development.json
+**/prod.json
+**/production.json
+**/config.dev.js
+**/config.development.js
+**/config.prod.js
+**/config.production.js
